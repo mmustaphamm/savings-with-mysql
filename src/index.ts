@@ -1,17 +1,19 @@
 import { AppDataSource } from "./data-source"
-import express, { Application } from "express"
+import * as express from "express"
 import * as dotenv from 'dotenv'
-import morgan from 'morgan'
+import * as morgan from 'morgan'
+import payinROUTER from './routes/PayinsRoute'
 
 
 
 
 AppDataSource.initialize().then(async () => {
-const app:Application = express()
+const app: express.Application = express()
 app.use(express.json())
 app.use(morgan('dev'))
-
 dotenv.config()
+
+app.use('/api', payinROUTER)
 
 
 app.listen(process.env.PORT, ()=>{

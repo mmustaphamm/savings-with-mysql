@@ -1,6 +1,9 @@
 import "reflect-metadata"
 import { DataSource } from "typeorm"
-
+import { Payins } from "./entity/Savings"
+import { Collection } from "./entity/Collections"
+import { Webhook } from "./entity/Webhooks"
+import { Partner } from "./entity/Partner"
 import * as dotenv from 'dotenv'
 
 dotenv.config()
@@ -15,7 +18,7 @@ export const AppDataSource = new DataSource({
     database: "savings",
     synchronize: true,
     logging: false,
-    entities: [],
+    entities: [Payins, Collection, Webhook, Partner],
     migrations: [],
     subscribers: [],
 })
