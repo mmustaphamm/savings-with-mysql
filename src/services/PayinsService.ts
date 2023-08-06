@@ -114,7 +114,6 @@ export class PayinService {
                       updateCollection.cba_id = payin.charge_reference
                       updateCollection.charge_amount = payin.charge_amount
                       await collectionRepository.save(updateCollection)
-                      return updateCollection;
                     }
                   }
                 }
@@ -123,9 +122,7 @@ export class PayinService {
           } catch (error) {
             console.error('Error sending API request:', error);
           }
-      
         }
-        return payinsToUpdate;
       }
        return payinsToUpdate;
     } catch (error) {

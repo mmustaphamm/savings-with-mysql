@@ -11,11 +11,11 @@ export class Collection {
   @Column('bigint', { unsigned: true })
   partner_id: number;
 
-  @Column({type:'bigint', unsigned: true })
+  @Column({type:'bigint', unsigned: true, default: null })
   collection_account_id: number;
 
   @Column('bigint', { unsigned: true, nullable: true })
-  payin_id: number | null;
+  payin_id: number ;
 
   @Column({ type: 'varchar', length: 255, collation: 'utf8mb4_unicode_ci' })
   merchant_transaction_ref: string;

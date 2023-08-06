@@ -18,7 +18,7 @@ dotenv.config()
 
 app.use('/api', payinROUTER)
 app.use('/webhook', webhookROUTER)
-app.use('/coll', collectionROUTER)
+app.use('/collection', collectionROUTER)
 app.use('/partner', pRouter)
 
 
