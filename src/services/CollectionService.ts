@@ -10,4 +10,12 @@ export class CollectionService {
     if (!collections) throw Error('users not found');
     return collections;
   }
+
+  static async createEmployee(info) {
+    const userRepository = AppDataSource.getRepository(Collection);
+    const user = userRepository.create(info)
+    if(!user) throw new Error("Try again, user not created");
+    await userRepository.save(user);
+    return user;
+  }
 }

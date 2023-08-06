@@ -11,7 +11,7 @@ export class Collection {
   @Column('bigint', { unsigned: true })
   partner_id: number;
 
-  @Column('bigint', { unsigned: true })
+  @Column({type:'bigint', unsigned: true })
   collection_account_id: number;
 
   @Column('bigint', { unsigned: true, nullable: true })
@@ -60,10 +60,10 @@ export class Collection {
   expired_at: Date | null;
 
   @Column({ type: 'tinyint', default: 0 })
-  is_paid: number;
+  is_paid: boolean;
 
   @Column({ type: 'tinyint', default: 0 })
-  in_use: number;
+  in_use: boolean;
 
   @Column({ type: 'varchar', length: 255, collation: 'utf8mb4_unicode_ci', nullable: true })
   cba_id: string | null;

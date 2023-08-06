@@ -1,0 +1,38 @@
+export const collectionPayload = {
+    merchantRef: '',
+    amount: '',
+    amountReceived: '',
+    status: "successful",
+    narration: "",
+    sessionId: "",
+    senderAccountName: "",
+    senderAccountNumber: "",
+    senderBank: "",
+    senderBankCode: "",
+    remitReference: "",
+    accountType: "",
+    beneficiaryAccount: "",
+    customer: {
+        customerName: "",
+        customerEmail: "",
+        customerPhone: "",
+    },
+    createdAt: "",
+    receivedAt: "",
+}
+
+export const notCollectionPayload = {
+    merchantId: '',
+    amount: 2000,
+    beneficiaryName: "",
+    beneficiaryAccountNumber: "",
+    narration: "",
+    sessionId: "",
+    senderAccountName: "",
+    senderAccountNumber: "",
+    senderBank: "",
+    senderBankCode: "",
+    remitReference: "",
+    accountType: "Merchant",
+    createdAt: "",
+}

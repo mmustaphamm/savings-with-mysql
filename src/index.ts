@@ -3,6 +3,9 @@ import * as express from "express"
 import * as dotenv from 'dotenv'
 import * as morgan from 'morgan'
 import payinROUTER from './routes/PayinsRoute'
+import webhookROUTER from "./routes/WebhooksRoute"
+import collectionROUTER from "./routes/CollectionRoute"
+import pRouter from "./routes/PartnerRoute"
 
 
 
@@ -14,6 +17,9 @@ app.use(morgan('dev'))
 dotenv.config()
 
 app.use('/api', payinROUTER)
+app.use('/webhook', webhookROUTER)
+app.use('/coll', collectionROUTER)
+app.use('/partner', pRouter)
 
 
 app.listen(process.env.PORT, ()=>{

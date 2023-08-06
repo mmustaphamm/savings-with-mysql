@@ -1,8 +1,12 @@
 import { Payins } from "../entity/Savings";
 import { AppDataSource } from "../data-source";
-import { makePostRequest } from './utils/axiosCall'
+import { chargesPostRequest, remitPostRequest} from './utils/axiosCall'
 import axios from 'axios'
 import { Collection } from "../entity/Collections";
+import { Partner } from "../entity/Partner";
+import { Webhook } from "../entity/Webhooks";
+import { collectionPayload, notCollectionPayload } from "./utils/payloads";
+
 
 
 export class PayinService {
@@ -14,128 +18,119 @@ export class PayinService {
     return employees;
   }
 
-      
-
-
-
-
-
-    
-  static async getEmptySenders() {
-    // const payinRepository = AppDataSource.getRepository(Payins);
-    // const recordsWithSenderBankCode = await payinRepository
-    // .createQueryBuilder('payin')
-    // .where('payin.sender_bank_code IS NOT NULL')
-    // .andWhere('payin.sender_account_number IS NOT NULL')
-    // .getMany();
-
-    // const externalApiResponse = await axios.get('https://get-available-data-from-api');
-    // const remitReference = await axios.get("https://api.publicapis.org/entries");
-    // const apiData = externalApiResponse.data;
-    // const remitData = remitReference.data
-
-    // const filteredPayins = recordsWithSenderBankCode.filter(payin => {
-    //   if (payin.sender_account_name === null || payin.sender_bank === null) {
-    //     // Use the API data to populate the null fields
-    //     if (payin) {
-
-    //     }
-    //     payin.sender_account_name = apiData.account_name;
-    //     payin.sender_bank = apiData.bank_name;
-    //     payin.remit_reference = remitData.remit_reference;
-    //     return payin;
-    //   }
-    // });
-
-    try {
-      const payinRepository = AppDataSource.getRepository(Payins);
-      const apiResponse = await axios.get('your-api-endpoint');
-      const dataToPopulate = apiResponse.data;
-      const remitReference = await axios.get("https://api.publicapis.org/entries")
-      const remitData = remitReference.data
-
-      for (const item of dataToPopulate) {
-        const nullCheckers = await payinRepository.findOne(item.id);
-  
-        if (nullCheckers) {
-          if (nullCheckers.sender_account_name === null && item.field1 !== null) {
-            nullCheckers.sender_account_name = item.sender_account_name;
-          }
-          if (nullCheckers.sender_bank === null && item.field2 !== null) {
-            nullCheckers.sender_bank = item.sender_bank;
-          }
-          if (nullCheckers.sender_bank === null && item.field2 !== null) {
-            nullCheckers.remit_reference = remitData.remit_reference;
-          }
-          await payinRepository.save(nullCheckers);
-        }
-      }
-
-    for (const charge of dataToPopulate) {
-      const queryBuilder = payinRepository.createQueryBuilder('payins');
-      if (charge.charge_amount === null) {
-
-        const externalApiResponse = await makePostRequest();
-        const chargeAmountApi = externalApiResponse.data;
-        queryBuilder.update()
-        .set({
-          // charge_amount: chargeAmount, // Update charge_amount field
-          charge_reference: chargeAmountApi.transactionId
-        })
-        .where('payin.id = :id', { id: charge.id })
-        .execute();
-      } else {
-        return payinRepository
-      }
-    }
-    return "Fields updated successfully"
-} catch (error: any) {
-  console.error(error);
-
-  }
-}
-   
-
-
-
-
-
-
-
-
-
-
-
-  static async updateEmployee(id: number, firstName:string, lastName:string, email:string, webStack:string) {
-    const userRepository = AppDataSource.getRepository(Collection);
-    const user = await userRepository.find({where:{id}});
-    if (!user) {
-      return null;
-    }
-    await userRepository.update({id}, { })
-    return user;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   static async createEmployee(info) {
     const userRepository = AppDataSource.getRepository(Payins);
     const user = userRepository.create(info)
     if(!user) throw new Error("Try again, user not created");
     await userRepository.save(user);
     return user;
+  }
+
+
+  static async getEmptySenders() {
+    try {
+      const collectionRepository = AppDataSource.getRepository(Collection)
+      const payinsRepository = AppDataSource.getRepository(Payins)
+      const partnersRepository = AppDataSource.getRepository(Partner)
+      const webhooksRepository = AppDataSource.getRepository(Webhook)
+      const payinsWithSenderInfo = await payinsRepository
+        .createQueryBuilder('payins')
+        .where('payins.sender_account_number IS NOT NULL')
+        .andWhere('payins.sender_bank_code IS NOT NULL')
+        .getMany();
+
+      const payinsToUpdate = payinsWithSenderInfo.filter(payin => payin.sender_account_name === null);
+
+      if (payinsToUpdate.length > 0) {
+        for (const payin of payinsToUpdate) {
+          try {
+            // Send API request to populate sender_account_name
+            const responseSenderName = await axios.post('EXTERNAL_API_URL_FOR_NAME', {
+              sender_account_number: payin.sender_account_number,
+              sender_bank_code: payin.sender_bank_code,
+            });
+            const { sender_account_name } = responseSenderName.data;
+            await payinsRepository.update(payin.id, {sender_account_name});
+
+            // Check if charge_reference is null and charge_amount is not null
+            if (payin.charge_reference === null && payin.charge_amount !== null) {
+              const responseChargeAmount = await chargesPostRequest()
+              const { transactionId } = responseChargeAmount.data;
+              await payinsRepository.update(payin.id, {charge_reference: transactionId});
+            }
+
+            // Check if remit_reference is null
+            if (payin.remit_reference === null) {
+              const responseRemitReference = await remitPostRequest()
+                
+              const { remitReference } = responseRemitReference.data;
+              await payinsRepository.update(payin.id, {remit_reference: remitReference});
+            }
+
+            const partner = await partnersRepository.findOne({
+              where: {
+                merchant_account_id: payin.merchant_account_id,
+              },
+            });
+            
+            // Check if account_type is "C"
+            if (payin.account_type === 'C') {
+              if (partner) {
+                const webhook = await webhooksRepository.findOne({ where: { partner_id: partner.id, name: 'inward' } });
+                if (webhook) {
+                  // Send a POST request to webhook_url with secret_key as header
+                  await axios.post(webhook.webhook_url, collectionPayload, {
+                    headers: {
+                      'secret_key': webhook.secret_key,
+                    },
+                  });
+
+                  payin.notification_sent = true;
+                  await payinsRepository.save(payin);
+
+                } else {
+                  if (partner) {
+                    const webhook = await webhooksRepository.findOne({ where: { partner_id: partner.id, name: 'inward' } });
+                    if (webhook) {
+                      // Send a POST request to webhook_url with secret_key as header
+                      await axios.post(webhook.webhook_url, notCollectionPayload, {
+                        headers: {
+                          'secret_key': webhook.secret_key,
+                        },
+                      });
+
+                      payin.notification_sent = true;
+                      await payinsRepository.save(payin);
+
+                      const updateCollection = await collectionRepository.findOne({where:{payin_id:payin.id}});
+                      if (!updateCollection) {
+                        return;
+                      }
+                      updateCollection.in_use = false
+                      updateCollection.is_paid = true,
+                      updateCollection.transaction_status = 2
+                      updateCollection.sender_nuban = payin.sender_account_number
+                      updateCollection.amount_received = payin?.amount
+                      updateCollection.cba_id = payin.charge_reference
+                      updateCollection.charge_amount = payin.charge_amount
+                      await collectionRepository.save(updateCollection)
+                      return updateCollection;
+                    }
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error sending API request:', error);
+          }
+      
+        }
+        return payinsToUpdate;
+      }
+       return payinsToUpdate;
+    } catch (error) {
+      console.error('Error:', error);
+      throw new Error('Internal server error');
+    }
   }
 }

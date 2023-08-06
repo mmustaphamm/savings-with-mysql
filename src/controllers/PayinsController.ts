@@ -29,12 +29,29 @@ export class PayinController {
         sender_account_number,
         sender_bank,
         sender_bank_code,
-        sender_kyc_level
+        sender_kyc_level,
+        notification_sent,
+        session_id,
+        is_remitted,
+        // beneficiary_account_number,
+        beneficiary_name,
+        narration,
+        channel,
+        reference,
+        is_reversed,
+        remit_reference,
+        charge_reference,
+        charge_amount,
+        merchant_account_id,
+        account_type,
+        remittance_id,
+        payin_raw_id,
+        
          } = req.body;
 
     try {
     
-    const user =  await PayinService.createEmployee({amount, sender_bank_code, sender_account_name, sender_bvn,  sender_account_number, sender_bank, sender_kyc_level});
+    const user =  await PayinService.createEmployee({amount, notification_sent, session_id, is_remitted, is_reversed, beneficiary_name, narration, reference, channel, remit_reference, charge_reference, charge_amount, payin_raw_id, merchant_account_id, account_type, remittance_id, sender_bank_code, sender_account_name, sender_bvn,  sender_account_number, sender_bank, sender_kyc_level});
     if (!user){
        return res.status(400).json({message: 'There was an error creating a user'})
     }
